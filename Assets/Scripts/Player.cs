@@ -11,7 +11,7 @@ public class Player : MonoBehaviour
     private PlayerInput inputs;
     private Rigidbody rb;
     [SerializeField]
-    private float speed, jumpForce;
+    private float speed, jumpForce, fireKillTime;
     private Vector3 walkVector;
 
     bool Alive = true;
@@ -100,24 +100,84 @@ public class Player : MonoBehaviour
         inputs.UI.Enable();
     }
 
+    void ClearLevel()
+    {
+        Alive = false;
+        uiBehavior.ShowLevelClear();
+        print("level clear");
+        inputs.UI.Enable();
+    }
+
 
     void InputHold(InputAction.CallbackContext ctx)
     {
         print("input hold started");
         SlowTapInteraction hold = ctx.interaction as SlowTapInteraction;
+        if(uiBehavior)
         uiBehavior.StartUIHold(hold.duration);
+    }
+
+    void CheckDmgType(Damage.DamageType dmg)
+    {
+        switch (dmg)
+        {
+            case Damage.DamageType.Kill:
+                Die();
+                break;
+            case Damage.DamageType.Fire:
+                StartCoroutine(FireTimer());
+                print("fire");
+                break;
+            default:
+                break;
+        }
+    }
+
+    void CheckPowerUpType(PowerUp.PowerType PwrType)
+    {
+        switch (PwrType)
+        {
+            case PowerUp.PowerType.revive:
+                print("revived");
+                Alive = true;
+                break;
+            case PowerUp.PowerType.fly:
+                break;
+            default:
+                break;
+        }
+    }
+
+
+    IEnumerator FireTimer()
+    {
+        float timer = 0;
+        while(timer < fireKillTime)
+        {
+            timer += Time.deltaTime;
+            yield return null;
+        }
+        print("timer finished");
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        //print("collided with " + other.name);
+        print("collided with " + other.gameObject.name);
         int layer = 6;
         int layermask = 1 << layer;
         //print("bit mask is " + layermask);
         //print("layer bit is " + other.gameObject.layer.ToString());
         if (other.gameObject.layer == 6)
         {
-            Die();
+            CheckDmgType(other.gameObject.GetComponentInParent<Damage>().DmgType);
+        }
+        if(other.gameObject.layer == 7)
+        {
+            ClearLevel();
+        }
+        if(other.gameObject.layer == 8)
+        {
+            CheckPowerUpType(other.gameObject.GetComponent<PowerUp>().Power);
         }
     }
 

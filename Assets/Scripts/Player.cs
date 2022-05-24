@@ -8,16 +8,21 @@ public class Player : MonoBehaviour
 {
     [SerializeField]
     UIBehavior uiBehavior;
+    [SerializeField]
+    PickUpObjUI pickUp;
     private PlayerInput inputs;
     private Rigidbody rb;
     [SerializeField]
     private float speed, jumpForce, fireKillTime;
     private Vector3 walkVector;
+    GameObject TargetObject;
+    GameObject HeldObj;
+
 
     bool Alive = true;
     enum State
     {
-        walking, jumping
+        walking, jumping, dead
     }
     State playerState;
 
@@ -30,6 +35,7 @@ public class Player : MonoBehaviour
         inputs.Gameplay.Movement.canceled += (InputAction.CallbackContext x) => walkVector = Vector3.zero;
         inputs.Gameplay.Jump.performed += PerformJump;
         inputs.UI.Accept.started += InputHold;
+        inputs.Gameplay.PickUp.performed += CarryObj;
         inputs.UI.Accept.performed += (cx) => print("input hold complete" );
         inputs.UI.Accept.canceled += (ctx) => {uiBehavior.CancelRadial();};
     }
@@ -45,6 +51,7 @@ public class Player : MonoBehaviour
         inputs.UI.Accept.canceled -= (ctx) => { uiBehavior.CancelRadial();};
         inputs.Gameplay.Disable();
         inputs.UI.Disable();
+        inputs.Gameplay.PickUp.performed -= CarryObj;
     }
 
     // Start is called before the first frame update
@@ -59,9 +66,6 @@ public class Player : MonoBehaviour
         
     }
 
-
-
-
     private void FixedUpdate()
     {
         switch (playerState)
@@ -70,6 +74,9 @@ public class Player : MonoBehaviour
                 rb.MovePosition(walkVector + transform.position);
                 break;
             case State.jumping:
+                break;
+            case State.dead:
+                //rb.AddRelativeForce(walkVector + transform.position);
                 break;
             default:
                 break;
@@ -85,7 +92,12 @@ public class Player : MonoBehaviour
 
     void ReadMoveInput(InputAction.CallbackContext val)
     {
-        if (!Alive) return;
+        if (!Alive)
+        {
+            //walkVector = Vector2.zero;
+            
+            return;
+        }
         Vector2 inputVector =  val.ReadValue<Vector2>();
         walkVector = new Vector3(inputVector.x, 0, inputVector.y);
         walkVector *= speed;
@@ -95,6 +107,7 @@ public class Player : MonoBehaviour
     void Die()
     {
         Alive = false;
+        playerState = State.dead;
         uiBehavior.ShowGameOver();
         print("player died");
         inputs.UI.Enable();
@@ -144,19 +157,64 @@ public class Player : MonoBehaviour
         }
     }
 
-    void CheckPowerUpType(PowerUp.PowerType PwrType)
+    void CheckPowerUpType(PowerUp Pwr)
     {
-        switch (PwrType)
+        switch (Pwr.Power)
         {
             case PowerUp.PowerType.revive:
-                print("revived");
-                Alive = true;
+                if (!Alive)
+                {
+                    print("revived");
+                    Alive = true;
+                    playerState = State.walking;
+                    uiBehavior.CancelRadial();
+                    Pwr.gameObject.SetActive(false);
+                    uiBehavior.gameObject.SetActive(false);
+                    
+                    //delete power object
+                }
+                else
+                {
+                    if (!pickUp) return;
+                    if (!HeldObj)
+                    {
+                        //activate pick up AI
+                        pickUp.ShowPickUpUI();
+                        TargetObject = Pwr.gameObject;
+                    }
+                    else
+                    {
+                        pickUp.ShowThrowUI();
+                    }
+                }
                 break;
             case PowerUp.PowerType.fly:
                 break;
             default:
                 break;
         }
+    }
+
+    void CarryObj(InputAction.CallbackContext ctx)
+    {
+        if (!HeldObj && TargetObject)
+        {
+            HeldObj = TargetObject;
+            TargetObject = null;
+            HeldObj.GetComponent<Collider>().enabled = false;
+            HeldObj.transform.parent = transform;
+            HeldObj.transform.localPosition = Vector3.forward;
+            pickUp.ShowThrowUI();
+        }
+        else if(HeldObj)
+        {
+            HeldObj.transform.parent = null;
+
+            HeldObj.GetComponent<Collider>().enabled = true;
+            HeldObj = null;
+            pickUp.gameObject.SetActive(false);
+        }
+
     }
 
 
@@ -168,6 +226,7 @@ public class Player : MonoBehaviour
             timer += Time.deltaTime;
             yield return null;
         }
+        Die();
         print("timer finished");
     }
 
@@ -188,7 +247,15 @@ public class Player : MonoBehaviour
         }
         if(other.gameObject.layer == 8)
         {
-            CheckPowerUpType(other.gameObject.GetComponent<PowerUp>().Power);
+            CheckPowerUpType(other.gameObject.GetComponent<PowerUp>());
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if(other.gameObject.layer == 9)
+        {
+            pickUp.gameObject.SetActive(false);
         }
     }
 

@@ -117,9 +117,9 @@ public class Player : MonoBehaviour
         uiBehavior.StartUIHold(hold.duration);
     }
 
-    void CheckDmgType(Damage.DamageType dmg)
+    void CheckDmgType(Damage dmg)
     {
-        switch (dmg)
+        switch (dmg.DmgType)
         {
             case Damage.DamageType.Kill:
                 Die();
@@ -128,6 +128,17 @@ public class Player : MonoBehaviour
                 StartCoroutine(FireTimer());
                 print("fire");
                 break;
+            case Damage.DamageType.Cut:
+                transform.localScale *= .5f;
+                print("touched saw");
+                break;
+            case Damage.DamageType.launch:
+                print("player launched");
+                playerState = State.jumping;
+                rb.AddRelativeForce((dmg.transform.right + Vector3.up * 2) * jumpForce, ForceMode.Impulse);
+
+                break;
+
             default:
                 break;
         }
@@ -169,7 +180,7 @@ public class Player : MonoBehaviour
         //print("layer bit is " + other.gameObject.layer.ToString());
         if (other.gameObject.layer == 6)
         {
-            CheckDmgType(other.gameObject.GetComponentInParent<Damage>().DmgType);
+            CheckDmgType(other.gameObject.GetComponentInParent<Damage>());
         }
         if(other.gameObject.layer == 7)
         {

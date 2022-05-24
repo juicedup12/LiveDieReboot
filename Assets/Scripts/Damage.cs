@@ -6,7 +6,7 @@ public class Damage : MonoBehaviour
 {
     public enum DamageType
     {
-        Kill, Fire
+        Kill, Fire, Cut, launch
     }
     public DamageType DmgType;
 

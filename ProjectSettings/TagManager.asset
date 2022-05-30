@@ -3,7 +3,13 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - CinemachineTarget
+  - bullet
+  - limb
+  - Ragdoll
+  - Turret
+  - life
   layers:
   - Default
   - TransparentFX
@@ -14,9 +20,9 @@ TagManager:
   - Damage
   - Goal
   - PowerUp
-  - 
-  - 
-  - 
+  - Limbs
+  - Player
+  - Ragdoll
   - 
   - 
   - 

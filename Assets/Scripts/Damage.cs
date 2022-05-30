@@ -6,7 +6,7 @@ public class Damage : MonoBehaviour
 {
     public enum DamageType
     {
-        Kill, Fire, Cut, launch
+        Kill, Fire, Cut, launch, bullet
     }
     public DamageType DmgType;
 
@@ -19,6 +19,14 @@ public class Damage : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        if(DmgType == DamageType.bullet)
+        {
+            if (transform.position.magnitude > 100)
+                Destroy(gameObject);
+        }
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
     }
 }

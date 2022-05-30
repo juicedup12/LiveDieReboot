@@ -1,6 +1,5 @@
 # LiveDieReboot
-![alt text]([http://url/to/img.png](https://i.ibb.co/C6BzGFk/addtext-com-MTcx-Mz-Uz-Mz-A1-NA.png))
-
+<a href="https://ibb.co/0Kqcb3g"><img src="https://i.ibb.co/gdy3KC5/addtext-com-MTcx-Mz-Uz-Mz-A1-NA.png" alt="addtext-com-MTcx-Mz-Uz-Mz-A1-NA" border="0"></a>
 Entry for the 2022 GameDev.tv Game Jam
 I wanted to do more with this game but I couldn't deal with all the bugs :(
 

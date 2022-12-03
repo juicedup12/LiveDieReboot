@@ -71,6 +71,15 @@ public partial class @ProtoTypeInput : IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Interact"",
+                    ""type"": ""Button"",
+                    ""id"": ""b4d07dc6-c9de-4370-a5df-3629e93e6eb7"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -194,6 +203,17 @@ public partial class @ProtoTypeInput : IInputActionCollection2, IDisposable
                     ""action"": ""Sprint"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""0f40ac32-43fd-407f-be02-b0b4f7de0be2"",
+                    ""path"": ""<Keyboard>/e"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""KeyboardMouse"",
+                    ""action"": ""Interact"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         },
@@ -209,15 +229,6 @@ public partial class @ProtoTypeInput : IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
-                },
-                {
-                    ""name"": ""PressInteract"",
-                    ""type"": ""PassThrough"",
-                    ""id"": ""21e6f3ee-8b61-430a-bceb-9c355a93970a"",
-                    ""expectedControlType"": ""Button"",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -225,21 +236,10 @@ public partial class @ProtoTypeInput : IInputActionCollection2, IDisposable
                     ""name"": """",
                     ""id"": ""f0ba441a-ebf7-472f-b47b-4deb2c136aa5"",
                     ""path"": ""<Keyboard>/e"",
-                    ""interactions"": ""SlowTap(duration=1)"",
+                    ""interactions"": ""Hold(duration=1.5)"",
                     ""processors"": """",
                     ""groups"": ""KeyboardMouse"",
                     ""action"": ""HoldInteract"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
-                    ""id"": ""9378e242-c1d3-4687-a48e-de475a75ff15"",
-                    ""path"": ""<Keyboard>/e"",
-                    ""interactions"": ""Tap"",
-                    ""processors"": """",
-                    ""groups"": ""KeyboardMouse"",
-                    ""action"": ""PressInteract"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -267,10 +267,10 @@ public partial class @ProtoTypeInput : IInputActionCollection2, IDisposable
         m_Gameplay_PickUp = m_Gameplay.FindAction("PickUp", throwIfNotFound: true);
         m_Gameplay_Look = m_Gameplay.FindAction("Look", throwIfNotFound: true);
         m_Gameplay_Sprint = m_Gameplay.FindAction("Sprint", throwIfNotFound: true);
+        m_Gameplay_Interact = m_Gameplay.FindAction("Interact", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_HoldInteract = m_UI.FindAction("HoldInteract", throwIfNotFound: true);
-        m_UI_PressInteract = m_UI.FindAction("PressInteract", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -335,6 +335,7 @@ public partial class @ProtoTypeInput : IInputActionCollection2, IDisposable
     private readonly InputAction m_Gameplay_PickUp;
     private readonly InputAction m_Gameplay_Look;
     private readonly InputAction m_Gameplay_Sprint;
+    private readonly InputAction m_Gameplay_Interact;
     public struct GameplayActions
     {
         private @ProtoTypeInput m_Wrapper;
@@ -344,6 +345,7 @@ public partial class @ProtoTypeInput : IInputActionCollection2, IDisposable
         public InputAction @PickUp => m_Wrapper.m_Gameplay_PickUp;
         public InputAction @Look => m_Wrapper.m_Gameplay_Look;
         public InputAction @Sprint => m_Wrapper.m_Gameplay_Sprint;
+        public InputAction @Interact => m_Wrapper.m_Gameplay_Interact;
         public InputActionMap Get() { return m_Wrapper.m_Gameplay; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -368,6 +370,9 @@ public partial class @ProtoTypeInput : IInputActionCollection2, IDisposable
                 @Sprint.started -= m_Wrapper.m_GameplayActionsCallbackInterface.OnSprint;
                 @Sprint.performed -= m_Wrapper.m_GameplayActionsCallbackInterface.OnSprint;
                 @Sprint.canceled -= m_Wrapper.m_GameplayActionsCallbackInterface.OnSprint;
+                @Interact.started -= m_Wrapper.m_GameplayActionsCallbackInterface.OnInteract;
+                @Interact.performed -= m_Wrapper.m_GameplayActionsCallbackInterface.OnInteract;
+                @Interact.canceled -= m_Wrapper.m_GameplayActionsCallbackInterface.OnInteract;
             }
             m_Wrapper.m_GameplayActionsCallbackInterface = instance;
             if (instance != null)
@@ -387,6 +392,9 @@ public partial class @ProtoTypeInput : IInputActionCollection2, IDisposable
                 @Sprint.started += instance.OnSprint;
                 @Sprint.performed += instance.OnSprint;
                 @Sprint.canceled += instance.OnSprint;
+                @Interact.started += instance.OnInteract;
+                @Interact.performed += instance.OnInteract;
+                @Interact.canceled += instance.OnInteract;
             }
         }
     }
@@ -396,13 +404,11 @@ public partial class @ProtoTypeInput : IInputActionCollection2, IDisposable
     private readonly InputActionMap m_UI;
     private IUIActions m_UIActionsCallbackInterface;
     private readonly InputAction m_UI_HoldInteract;
-    private readonly InputAction m_UI_PressInteract;
     public struct UIActions
     {
         private @ProtoTypeInput m_Wrapper;
         public UIActions(@ProtoTypeInput wrapper) { m_Wrapper = wrapper; }
         public InputAction @HoldInteract => m_Wrapper.m_UI_HoldInteract;
-        public InputAction @PressInteract => m_Wrapper.m_UI_PressInteract;
         public InputActionMap Get() { return m_Wrapper.m_UI; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -415,9 +421,6 @@ public partial class @ProtoTypeInput : IInputActionCollection2, IDisposable
                 @HoldInteract.started -= m_Wrapper.m_UIActionsCallbackInterface.OnHoldInteract;
                 @HoldInteract.performed -= m_Wrapper.m_UIActionsCallbackInterface.OnHoldInteract;
                 @HoldInteract.canceled -= m_Wrapper.m_UIActionsCallbackInterface.OnHoldInteract;
-                @PressInteract.started -= m_Wrapper.m_UIActionsCallbackInterface.OnPressInteract;
-                @PressInteract.performed -= m_Wrapper.m_UIActionsCallbackInterface.OnPressInteract;
-                @PressInteract.canceled -= m_Wrapper.m_UIActionsCallbackInterface.OnPressInteract;
             }
             m_Wrapper.m_UIActionsCallbackInterface = instance;
             if (instance != null)
@@ -425,9 +428,6 @@ public partial class @ProtoTypeInput : IInputActionCollection2, IDisposable
                 @HoldInteract.started += instance.OnHoldInteract;
                 @HoldInteract.performed += instance.OnHoldInteract;
                 @HoldInteract.canceled += instance.OnHoldInteract;
-                @PressInteract.started += instance.OnPressInteract;
-                @PressInteract.performed += instance.OnPressInteract;
-                @PressInteract.canceled += instance.OnPressInteract;
             }
         }
     }
@@ -448,10 +448,10 @@ public partial class @ProtoTypeInput : IInputActionCollection2, IDisposable
         void OnPickUp(InputAction.CallbackContext context);
         void OnLook(InputAction.CallbackContext context);
         void OnSprint(InputAction.CallbackContext context);
+        void OnInteract(InputAction.CallbackContext context);
     }
     public interface IUIActions
     {
         void OnHoldInteract(InputAction.CallbackContext context);
-        void OnPressInteract(InputAction.CallbackContext context);
     }
 }

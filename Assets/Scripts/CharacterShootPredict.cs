@@ -17,12 +17,15 @@ public class CharacterShootPredict  : MonoBehaviour
     private ParticleSystem particles;
     private Vector3 targetVelocity, targetPosition;
     RagdollBehavior trg;
-    CharacterController c;
+    CharacterController CharacterControllerTarget;
     [SerializeField]
     Material HostileMat, FriendlyMat;
     Renderer rndr;
     bool IsFriendly;
     Rigidbody rb;
+    Quaternion defaultRot;
+    [SerializeField]
+    float MaxColVelocity;
 
     public void Start()
     {
@@ -32,23 +35,35 @@ public class CharacterShootPredict  : MonoBehaviour
         particles = GetComponentInChildren<ParticleSystem>();
         rndr = GetComponent<Renderer>();
         HostileMat = rndr.material;
-
+        defaultRot = transform.rotation;
     }
 
+
+    //need to replace character controller reference and use a rigidbody instead
     void Update()
     {
-        if (!target || IsFriendly) return;
+        if (!target || IsFriendly)
+        {
+            transform.rotation = defaultRot;
+            if (!target)
+            {
+                //print("no target");
+            }
+            //print("friendly status: " + IsFriendly);
+            return;
+        }
 
         if (trg) {
-            if (trg.HasBeenHit) { target = null; trg = null; return; }
+            if (trg.HasBeenHit) { target = null; trg = null; print("target has been hit already");  return; }
             targetPosition = trg.transform.position;
             targetVelocity = trg.hip.velocity;
         }
-        if(c)
+        if(CharacterControllerTarget)
         {
-            if(!c.enabled)
+            if(!CharacterControllerTarget.enabled)
             {
-                c = null;
+                CharacterControllerTarget = null;
+                print("character controller not enabled");
                 target = null;
                 return;
             }
@@ -56,19 +71,21 @@ public class CharacterShootPredict  : MonoBehaviour
         
         if (!trg && target is RagdollBehavior)
         {
+            print("assigning ragdoll as target");
             trg = (RagdollBehavior)target;
         }
-        if(!c && target is CharacterController)
+        if(!CharacterControllerTarget && target is CharacterController)
         {
-            c = (CharacterController)target;
+            print("assigning character controller as target");
+            CharacterControllerTarget = (CharacterController)target;
         }
         if (target is CharacterController)
         {
             
-            targetPosition = c.transform.position;
-            targetVelocity = c.velocity;
+            targetPosition = CharacterControllerTarget.transform.position;
+            targetVelocity = CharacterControllerTarget.velocity;
         }
-        //print("target controller is " + target.gameObject.name + $"/n position is {targetPosition}" + " velocity is " + targetVelocity);
+        print("target controller is " + target.gameObject.name + $"/n position is {targetPosition}" + " velocity is " + targetVelocity);
 
         Vector3 IC = CalculateInterceptCourse(targetPosition, targetVelocity, transform.position, projectileSpeed);
 
@@ -85,7 +102,7 @@ public class CharacterShootPredict  : MonoBehaviour
         if (HaveCourse)
             if (Time.time > timer)
             {
-                //print("can shoot");
+                print("can shoot");
                 timer = Time.time + CoolDown;
                 Shoot();
             }
@@ -178,27 +195,36 @@ public class CharacterShootPredict  : MonoBehaviour
         
     }
 
+    void ResetRotation()
+    {
+        //go back to default rotation after target leaves
+    }
+
     public void Friendly()
     {
+        print("turret is friendly");
         rndr.material = FriendlyMat;
         IsFriendly = true;
     }
 
     public void hostile()
     {
+        print("turret is hostile");
         rndr.material = HostileMat;
         transform.parent = null;
         IsFriendly = false;
-        rb.isKinematic = true;
-
+        //rb.isKinematic = true;
+        rb.freezeRotation = true;
+        enabled = true;
     }
 
-    public void KnockOver(Vector3 forward)
+    public void KnockOver()
     {
-
-        rb.isKinematic = false;
+        print("turret knocked over");
         Friendly();
-        rb.AddForce(forward);
+        enabled = false;
+        rb.isKinematic = false;
+        rb.freezeRotation = false;
     }
 
 
@@ -209,13 +235,15 @@ public class CharacterShootPredict  : MonoBehaviour
 
 
         //if player enters, raycast in player layer and get charcontroller velocity
-        if (other.CompareTag("Player"))
+        if (other.TryGetComponent<Player>(out Player player))
         {
-            print($"player in view of turret ({other.transform})");
+            print($"player in view of turret ({player.transform})");
             if (TurretRayCheck(other.transform.position + Vector3.up, 1 << 10))
             {
-                target = other.GetComponent<CharacterController>();
-                print(target ? $"target is {other.gameObject.name}" : "no target");
+                target = player.GetCharacterController;
+                trg = null;
+                print(target ? $"target is {target}" : "no target");
+                return;
                 //print("player hit");
             }
             else print("nothing hit in raycast");
@@ -245,11 +273,21 @@ public class CharacterShootPredict  : MonoBehaviour
                     target = other.GetComponent<RagdollBehavior>();
 
                     print(target ? $"target is {other.gameObject.name}" : "no target");
-                    //print("player hit");
+                    print("player hit");
                 }
             }
         }
 
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        print("turret collided with " + collision.gameObject.name + "velocity : " + collision.relativeVelocity.magnitude);
+        if (collision.gameObject.CompareTag("Ragdoll") && collision.relativeVelocity.magnitude > MaxColVelocity)
+        {
+
+            KnockOver();
+        }
     }
 
     void OnTriggerExit(Collider other)
@@ -257,7 +295,7 @@ public class CharacterShootPredict  : MonoBehaviour
         if (other.tag == "Player")
         {
             print("player exited");
-            c = null; target = null;
+            CharacterControllerTarget = null; target = null;
         }
     }
 

@@ -49,6 +49,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "Interact",
+                    "type": "Button",
+                    "id": "b4d07dc6-c9de-4370-a5df-3629e93e6eb7",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -172,6 +181,17 @@
                     "action": "Sprint",
                     "isComposite": false,
                     "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "0f40ac32-43fd-407f-be02-b0b4f7de0be2",
+                    "path": "<Keyboard>/e",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "KeyboardMouse",
+                    "action": "Interact",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         },
@@ -187,15 +207,6 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
-                },
-                {
-                    "name": "PressInteract",
-                    "type": "PassThrough",
-                    "id": "21e6f3ee-8b61-430a-bceb-9c355a93970a",
-                    "expectedControlType": "Button",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -203,21 +214,10 @@
                     "name": "",
                     "id": "f0ba441a-ebf7-472f-b47b-4deb2c136aa5",
                     "path": "<Keyboard>/e",
-                    "interactions": "SlowTap(duration=1)",
+                    "interactions": "Hold(duration=1.5)",
                     "processors": "",
                     "groups": "KeyboardMouse",
                     "action": "HoldInteract",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "9378e242-c1d3-4687-a48e-de475a75ff15",
-                    "path": "<Keyboard>/e",
-                    "interactions": "Tap",
-                    "processors": "",
-                    "groups": "KeyboardMouse",
-                    "action": "PressInteract",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

@@ -1319,10 +1319,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   CarryTransform: {fileID: 0}
   CarryBody: {fileID: 0}
+  OnPickUp:
+    m_PersistentCalls:
+      m_Calls: []
+  OnRelease:
+    m_PersistentCalls:
+      m_Calls: []
   hip: {fileID: 4547937975207749607}
   HasBeenHit: 0
   IsBeingCarried: 0
   FlyMultiplier: 0.48
+  StartAsRagdoll: 0
 --- !u!135 &4695470
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -1552,15 +1559,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 0.21
   jumpForce: 6.84
-  fireKillTime: 0.55
+  fireKillTime: 1
   PlayerPrefab: {fileID: 5601262303243382335}
   cam: {fileID: 1036576709274364403}
   deathcam: {fileID: 0}
   move: {x: 0, y: 0}
   look: {x: 0, y: 0}
-  jump: 0
-  sprint: 0
+  IsJumpPressed: 0
+  IsSprinting: 0
   Alive: 1
+  SpawnPoint: {fileID: 0}
+  IndicateFireTime:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &3728584223465535033
 GameObject:
   m_ObjectHideFlags: 0

@@ -18,9 +18,7 @@ public class UIBehavior : MonoBehaviour
     SceneLoader loader;
     [SerializeField]
     private Image SquareImg;
-    public Action CommandAction;
     public GameObject PauseParent;
-    public float timer;
     public int level;
 
     private void Start()
@@ -42,37 +40,22 @@ public class UIBehavior : MonoBehaviour
 
     }
 
-    public void ShowUIPressButton(string textFunction, string ButtonIndicator, Action callback)
+    public void ShowUIPressButton(string textFunction, string ButtonIndicator)
     {
+        print("showing UI description for " + textFunction);
         SquareImg.gameObject.SetActive(true);
         Command.gameObject.SetActive(true);
         RadialButtonText.text = ButtonIndicator;
         Command.text = textFunction;
-        CommandAction = callback;
-    }
-    public void TapInvoke()
-    {
-        if (SquareInput.gameObject.activeSelf)
-        {
-            print("ui command action execute");
-            CommandAction?.Invoke();
-            CommandAction = null;
-            //HideUI();
-        }
+
     }
 
     
-    public void InvokeCommand()
-    {
-        print("invoking command while timer is as " + timer);
-        if (timer > .9) 
-        CommandAction?.Invoke();
-        CommandAction = null;
-    }
 
     public void HideUI()
     {
         print("hiding UI");
+        StopAllCoroutines();
         SquareImg.gameObject.SetActive(false);
         Command.gameObject.SetActive(false);
         Radial.gameObject.SetActive(false);
@@ -80,16 +63,28 @@ public class UIBehavior : MonoBehaviour
 
     }
 
-
-
-    public void ShowUIHoldButton(string TextFunction, string ButtonTextIndicator, Action callback)
+    public void SetRadialFillPercent(float percent)
     {
-        print("showing UI");
+        Radial.fillAmount = percent;
+    }
+
+    public void ShowUIHoldButton(string TextFunction, string ButtonTextIndicator )
+    {
+        if (!Radial.isActiveAndEnabled)
+        print("showing UI and asigning callback to radial complete");
         Radial.gameObject.SetActive(true);
         Command.gameObject.SetActive(true);
         RadialButtonText.text = ButtonTextIndicator;
         Command.text = TextFunction;
-        CommandAction = callback;
+    }
+
+
+    public void HoldExecute(float duration)
+    {
+        print("starting radial routine");
+
+        if (Radial.IsActive()) ;
+        //StartCoroutine(RadialUpdateRoutine(duration));
     }
 
     public void restartLevel()
@@ -102,31 +97,33 @@ public class UIBehavior : MonoBehaviour
         Application.Quit();
     }
 
-    public IEnumerator RadialUpdateRoutine(float duration)
-    {
-        //if(!Radial.isActiveAndEnabled)
-        //{
-        //    print("no hold action");
-        //    yield break;
-        //}
-        print("coroutine started");
-        timer = 0;
-        while(timer < duration)
-        {
-            //print("timer is " + timer);
-            timer += Time.unscaledDeltaTime;
-            Radial.fillAmount = timer;
-            yield return null;
+    //need to move this to player script
+    //public IEnumerator RadialUpdateRoutine(float duration)
+    //{
+    //    //if(!Radial.isActiveAndEnabled)
+    //    //{
+    //    //    print("no hold action");
+    //    //    yield break;
+    //    //}
+    //    print("coroutine started");
+    //    timer = 0;
+    //    while(timer < duration)
+    //    {
+    //        //print("timer is " + timer);
+    //        timer += Time.unscaledDeltaTime;
+    //        Radial.fillAmount = timer;
+    //        yield return null;
 
-        }
-        print("UI timer complete");
+    //    }
+    //    print("UI timer complete");
 
-        HideUI();
-        CommandAction?.Invoke();
-        CommandAction = null;
-        Radial.fillAmount = 0;
-    }
+    //    HideUI();
+    //    CommandAction?.Invoke();
+    //    CommandAction = null;
+    //    Radial.fillAmount = 0;
+    //}
 
+    //need to move this to player class
     public void ShowLevelClear()
     {
         HideUI();
@@ -137,16 +134,14 @@ public class UIBehavior : MonoBehaviour
         RadialButtonText.text = "e";
         Command.gameObject.SetActive(true);
         Command.text = "Press button to continue";
-        CommandAction = () => { loader.LoadLevel(level +1); print("loading level" + level + 1); };
+        //CommandAction = () => { loader.LoadLevel(level +1); print("loading level" + level + 1); };
     }
 
-    public void CancelRadial()
+    public void GoToNextLevel()
     {
-        Radial.fillAmount = 0;
-        print("cancelling routine");
-        StopCoroutine("RadialUpdateRoutine");
-        StopAllCoroutines();
+        loader.LoadLevel(level + 1);
     }
+
 
 
     public void PauseGame()

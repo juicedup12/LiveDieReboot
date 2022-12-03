@@ -8,8 +8,7 @@ public abstract class Carryable : MonoBehaviour
 
     public Transform CarryTransform;
     public Rigidbody CarryBody;
-    public UnityEvent OnPickUp;
-    public UnityEvent OnRelease;
+    [SerializeField] float CarryZdist;
 
     public virtual void Start()
     {
@@ -17,14 +16,14 @@ public abstract class Carryable : MonoBehaviour
         CarryBody = GetComponent<Rigidbody>();
     }
 
-    public void Update()
+    public void FixedUpdate()
     {
         //print("carryable update");
         if (CarryTransform)
         {
             //print("carryable ");
             Vector3 dir =  CarryBody.transform.position - CarryTransform.position;
-            CarryBody.MovePosition(CarryTransform.position + CarryTransform.forward + CarryTransform.up);
+            CarryBody.MovePosition(CarryTransform.position + CarryTransform.forward * CarryZdist + CarryTransform.up);
             CarryBody.rotation = CarryTransform.rotation;
             //CarryBody.transform.LookAt(CarryBody.position + dir);
             //transform.parent = CarryTransform;
@@ -32,38 +31,21 @@ public abstract class Carryable : MonoBehaviour
         }
     }
 
-    public virtual void PickUp(Transform CarryTransform)
+    public virtual void BeCarriedBy(Transform CarryTransform)
     {
         this.CarryTransform =  CarryTransform;
-        print("ragdoll being picked up by " + CarryTransform.name);
+        print("carryable being picked up by " + CarryTransform.name);
         GetComponent<Rigidbody>().isKinematic = true;
-        OnPickUp?.Invoke();
     }
     
     public virtual void Release(Vector3 velocity)
     {
+        print("releasing ragdoll  " + gameObject.name);
         CarryTransform = null;
         CarryBody.isKinematic = false;
-        OnRelease?.Invoke();
     }
 
 
-    public virtual void OnTriggerEnter(Collider other)
-    {
-        if(other.tag == "Player")
-        {
-            print("player near ragdoll");
-            other.GetComponent<Player>().TargetPickUp(this);
-        }
-    }
-
-    public virtual void OnTriggerExit(Collider other)
-    {
-        if (other.tag == "Player")
-        {
-            print("player away from ragdoll");
-            other.GetComponent<Player>().TargetPickUp(null);
-        }
-    }
+    
 
 }

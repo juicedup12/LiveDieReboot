@@ -21,6 +21,7 @@ public class Damage : MonoBehaviour
     {
         if(DmgType == DamageType.bullet)
         {
+            //deletes object if lasted for too long
             if (transform.position.magnitude > 100)
                 Destroy(gameObject);
         }

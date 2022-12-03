@@ -9,7 +9,13 @@ public class SceneLoader : MonoBehaviour
 
     public void LoadLevel(int level)
     {
-        print("loading level" + level);
+
+        if (SceneManager.sceneCountInBuildSettings < level + 1)
+        {
+            print("no scene " + level);
+            return;
+        }
+            print("loading level" + level);
         SceneManager.LoadScene(level);
     }
 

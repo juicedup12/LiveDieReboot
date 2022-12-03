@@ -24,6 +24,11 @@
                 "value": "{\"m_Value\":\"Assets/ProBuilder Data/Default Color Palette.asset\"}"
             },
             {
+                "type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089",
+                "key": "editor.materialPalettePath",
+                "value": "{\"m_Value\":\"Assets/ProBuilder Data/Default Material Palette.asset\"}"
+            },
+            {
                 "type": "UnityEngine.ProBuilder.SemVer, Unity.ProBuilder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
                 "key": "about.identifier",
                 "value": "{\"m_Value\":{\"m_Major\":5,\"m_Minor\":0,\"m_Patch\":4,\"m_Build\":-1,\"m_Type\":\"\",\"m_Metadata\":\"\",\"m_Date\":\"\"}}"
@@ -154,6 +159,21 @@
                 "value": "{\"m_Value\":true}"
             },
             {
+                "type": "System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089",
+                "key": "meshImporter.quads",
+                "value": "{\"m_Value\":true}"
+            },
+            {
+                "type": "System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089",
+                "key": "meshImporter.smoothing",
+                "value": "{\"m_Value\":true}"
+            },
+            {
+                "type": "System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089",
+                "key": "UVEditor.showPreviewMaterial",
+                "value": "{\"m_Value\":true}"
+            },
+            {
                 "type": "UnityEngine.ProBuilder.RectSelectMode, Unity.ProBuilder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
                 "key": "editor.dragSelectRectMode",
                 "value": "{\"m_Value\":0}"
@@ -196,12 +216,12 @@
             {
                 "type": "UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
                 "key": "ShapeBuilder.LastPivotPosition",
-                "value": "{\"m_Value\":{\"x\":-5.951006889343262,\"y\":-4.446795463562012,\"z\":22.71898651123047}}"
+                "value": "{\"m_Value\":{\"x\":0.9693139791488648,\"y\":-1.0,\"z\":0.9775669574737549}}"
             },
             {
                 "type": "UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
                 "key": "ShapeBuilder.LastSize",
-                "value": "{\"m_Value\":{\"x\":11.902013778686524,\"y\":8.893590927124024,\"z\":-45.43797302246094}}"
+                "value": "{\"m_Value\":{\"x\":-1.9386279582977296,\"y\":2.0,\"z\":-1.9551339149475098}}"
             },
             {
                 "type": "UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
@@ -292,6 +312,16 @@
                 "type": "System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089",
                 "key": "WeldVertices.weldDistance",
                 "value": "{\"m_Value\":0.009999999776482582}"
+            },
+            {
+                "type": "System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089",
+                "key": "meshImporter.smoothingAngle",
+                "value": "{\"m_Value\":1.0}"
+            },
+            {
+                "type": "System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089",
+                "key": "uv.uvEditorGridSnapIncrement",
+                "value": "{\"m_Value\":0.125}"
             },
             {
                 "type": "UnityEngine.ProBuilder.ExtrudeMethod, Unity.ProBuilder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",

@@ -1356,7 +1356,7 @@ GameObject:
   - component: {fileID: 2563862396009690733}
   - component: {fileID: 6558418499624650758}
   m_Layer: 5
-  m_Name: LevelStatus
+  m_Name: UIBehavior
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3674,7 +3674,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26989bbc72be8cb4ea07a8a4d891f9c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sceneLoader: {fileID: 0}
+  sceneLoader: {fileID: 6558418499624650758}
 --- !u!1 &2994860510022981299
 GameObject:
   m_ObjectHideFlags: 0

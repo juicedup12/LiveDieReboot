@@ -18,4 +18,6 @@ public class RagdollCollisionDetection : MonoBehaviour
             Player.Instance.ClearLevel();
         }
     }
+
+
 }

@@ -19,7 +19,7 @@ public class EmitSingularParticle : MonoBehaviour
     {
         ParticleSystem.EmitParams @params = new ParticleSystem.EmitParams();
         @params.position = t.position;
-       @params.applyShapeToPosition = true;
+        @params.applyShapeToPosition = true;
         Particle.Emit(@params, ParticleCount);
     }
 }

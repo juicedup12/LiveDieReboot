@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class RagdollBehavior : Carryable
 {
@@ -15,6 +16,9 @@ public class RagdollBehavior : Carryable
     [SerializeField] Transform[] TransformsToUnparent;
     int UnparentIndex;
     bool HasUnparentedTransform = false;
+    [SerializeField] UnityEvent<Rigidbody[]> OnDetatch;
+    [SerializeField] RagdollTrajectory ragdollTrajectory;
+    public RagdollTrajectory SetTrajectory { set => ragdollTrajectory = value; }
 
     // Start is called before the first frame update
     public override void Start()
@@ -23,6 +27,7 @@ public class RagdollBehavior : Carryable
         rigidbodies = GetComponentsInChildren<Rigidbody>();
         hipCol = GetComponent<Collider>();
         AttatchRigidBodies();
+        enabled = false;
     }
 
 
@@ -42,8 +47,8 @@ public class RagdollBehavior : Carryable
     /// <summary>
     /// Detatch ragdoll from player and send it flying with velocity
     /// </summary>
-    /// <param name="Velocity"></param>
-    public void Detatch(Vector3 Velocity)
+    /// <param name="velocity"></param>
+    public void Detatch(Vector3 velocity)
     {
         
         foreach (Rigidbody ragdollBone in rigidbodies)
@@ -53,9 +58,22 @@ public class RagdollBehavior : Carryable
                 print("found a player tag, continuing");
                 continue;
             }
-            print("detatching rigidbody with " + Velocity + " velocity");
+            //print("detatching rigidbody " + ragdollBone + " with " + velocity + " velocity");
             ragdollBone.isKinematic = false;
-            ragdollBone.AddForce(Velocity * FlyMultiplier, ForceMode.VelocityChange);
+            //ragdollBone.AddForce(Velocity * FlyMultiplier, ForceMode.Impulse);
+            //ragdollBone.velocity = Velocity * FlyMultiplier;
+        }
+        //hip.velocity = Velocity * FlyMultiplier;
+        //hip.AddForce(Velocity * FlyMultiplier, ForceMode.Impulse);
+        if (velocity.magnitude > 10)
+        {
+            print("launching ragdoll velocity with " + velocity);
+            ragdollTrajectory.LaunchRagdoll(velocity);
+        }
+        else
+        {
+            print("launching hips with " + velocity);
+            hip.AddForce(velocity * 10, ForceMode.VelocityChange);
         }
         GetComponent<SphereCollider>().enabled = true;
         this.enabled = true;
@@ -63,18 +81,26 @@ public class RagdollBehavior : Carryable
         //incase player dies inside of turret view, turret won't keep shooting at body
         HasBeenHit = false;
         GetComponent<BoxCollider>().enabled = true;
+        //print("rigid body velocity is " + hip.velocity);
+        OnDetatch?.Invoke(rigidbodies);
     }
 
-    public override void BeCarriedBy(Transform t)
+    public override void BeCarriedBy(Transform t, float zdist)
     {
-        base.BeCarriedBy(t);
+        
+        base.BeCarriedBy(t, zdist);
+        foreach (Rigidbody rigidbody in rigidbodies)
+        {
+            rigidbody.velocity = Vector3.zero;
+        }
         //hip is the root
         //CarryTransform = t;
-        print("ragdoll being picked up by " +  CarryTransform.name);
+        print("ragdoll being picked up by " +  t.name);
         //hip.isKinematic = true;
         IsBeingCarried = true;
     }
 
+    //may need to make this virtual in order to use this on other carryables
     public void Fly(Vector3 velocity)
     {
         foreach (Rigidbody rb in rigidbodies)
@@ -86,8 +112,8 @@ public class RagdollBehavior : Carryable
     public override void Release(Vector3 velocity)
     {
         print("ragdoll released");
-        Fly(velocity);
-        hip.isKinematic = false;
+        Detatch(velocity);
+        base.Release(velocity);
         IsBeingCarried = false;
         CarryTransform = null;
         StartCoroutine(PickUpCoolDown());
@@ -119,8 +145,8 @@ public class RagdollBehavior : Carryable
         if (other.CompareTag("bullet"))
         {
             
-            //print("bullet hit ragdoll" + other.gameObject.name);
-            if (IsBeingCarried)
+            print("bullet hit ragdoll" + other.gameObject.name);
+            if (IsBeingCarried && CarryTransform.CompareTag("Player")) 
             {
                 if (UnparentIndex >= TransformsToUnparent.Length)
                 {
@@ -144,7 +170,7 @@ public class RagdollBehavior : Carryable
                     }
                     print("moving ragdoll from bullet hit");
                     //item.AddForceAtPosition(Random.insideUnitSphere * BulletReactionScale, item.position);
-                    item.AddForce(Random.insideUnitSphere * BulletReactionScale, ForceMode.VelocityChange);
+                    item.AddForce(UnityEngine.Random.insideUnitSphere * BulletReactionScale, ForceMode.VelocityChange);
                     //item.AddExplosionForce(BulletReactionScale, other.transform.position, 1);
                     
                 }
@@ -153,9 +179,11 @@ public class RagdollBehavior : Carryable
             }
             else
             {
+                Destroy(other.gameObject);
                 print("bullet hit ragdoll");
                 //Time.timeScale = .3f;
-                Fly(other.GetComponent<Rigidbody>().velocity);
+                //Fly(other.GetComponent<Rigidbody>().velocity);
+                Detatch(other.GetComponent<Rigidbody>().velocity * 50);
                 HasBeenHit = true;
             }
         }

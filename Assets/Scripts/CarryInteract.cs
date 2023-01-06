@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+//deprecated
 //can make carryable class as interactable instead
 public class CarryInteract : MonoBehaviour, IInteractable
 {

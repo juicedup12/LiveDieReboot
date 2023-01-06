@@ -2673,7 +2673,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   CarryTransform: {fileID: 0}
   CarryBody: {fileID: 0}
-  CarryZdist: 1.5
+  OnCarry:
+    m_PersistentCalls:
+      m_Calls: []
+  OnRelease:
+    m_PersistentCalls:
+      m_Calls: []
   hip: {fileID: 5553365179610724770}
   HasBeenHit: 0
   IsBeingCarried: 0
@@ -2686,6 +2691,10 @@ MonoBehaviour:
   - {fileID: 16408033735974278}
   - {fileID: 9073069841777351497}
   - {fileID: 3689263154330681787}
+  OnDetatch:
+    m_PersistentCalls:
+      m_Calls: []
+  ragdollTrajectory: {fileID: 0}
 --- !u!135 &8217944842319936491
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -2889,21 +2898,22 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6746353915221321119}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d94f9f3885e0ab349bf71190609bf557, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  CarryPos: {fileID: 0}
   speed: 0.21
   jumpForce: 6.84
   fireKillTime: 1
-  PlayerPrefab: {fileID: 9032991911815197467, guid: e8bb1b474dcd4784380df5b0c5e28c5e,
-    type: 3}
+  PlayerPrefab: {fileID: 4591330933355294842}
   cam: {fileID: 8966288958094964662}
   deathcam: {fileID: 0}
   move: {x: 0, y: 0}
   look: {x: 0, y: 0}
   LaunchPower: 10
+  BulletVelocityDamping: 0.5
   IsJumpPressed: 0
   IsSprinting: 0
   Alive: 1
@@ -3639,7 +3649,7 @@ MonoBehaviour:
   - m_Script
   m_LockStageInInspector: 
   m_StreamingVersion: 20170927
-  m_Priority: 10
+  m_Priority: 13
   m_StandbyUpdate: 2
   m_LookAt: {fileID: 6256640664376016677}
   m_Follow: {fileID: 1398866938660183235}
@@ -3652,7 +3662,7 @@ MonoBehaviour:
     ModeOverride: 0
     LensShift: {x: 0, y: 0}
     GateFit: 2
-    m_SensorSize: {x: 1.7777778, y: 1}
+    m_SensorSize: {x: 1, y: 1}
   m_Transitions:
     m_BlendHint: 0
     m_InheritPosition: 0

@@ -18,7 +18,7 @@ public class UIBehavior : MonoBehaviour
     SceneLoader loader;
     [SerializeField]
     private Image SquareImg;
-    public GameObject PauseParent;
+    public GameObject[] PauseWindows;
     public int level;
 
     private void Start()
@@ -133,13 +133,13 @@ public class UIBehavior : MonoBehaviour
         Radial.gameObject.SetActive(true);
         RadialButtonText.text = "e";
         Command.gameObject.SetActive(true);
-        Command.text = "Press button to continue";
+        //Command.text = "Press button to continue";
         //CommandAction = () => { loader.LoadLevel(level +1); print("loading level" + level + 1); };
     }
 
     public void GoToNextLevel()
     {
-        loader.LoadLevel(level + 1);
+        loader.LoadNextLevel();
     }
 
 
@@ -147,14 +147,18 @@ public class UIBehavior : MonoBehaviour
     public void PauseGame()
     {
         Time.timeScale = 0;
-        PauseParent.SetActive(true);
+        PauseWindows[0].SetActive(true);
         Cursor.lockState = CursorLockMode.None;
     }
 
     public void ResumeGame()
     {
         Time.timeScale = 1;
-        PauseParent.SetActive(false);
+        foreach (GameObject gameObject in PauseWindows)
+        {
+            gameObject.SetActive(false);
+        }
+        Cursor.lockState = CursorLockMode.Locked;
     }
 
 }

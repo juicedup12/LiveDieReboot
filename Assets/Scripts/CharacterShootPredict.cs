@@ -16,7 +16,7 @@ public class CharacterShootPredict  : MonoBehaviour
     public float CoolDown;
     private ParticleSystem particles;
     private Vector3 targetVelocity, targetPosition;
-    RagdollBehavior trg;
+    RagdollBehavior RagdollTarget;
     CharacterController CharacterControllerTarget;
     [SerializeField]
     Material HostileMat, FriendlyMat;
@@ -26,6 +26,8 @@ public class CharacterShootPredict  : MonoBehaviour
     Quaternion defaultRot;
     [SerializeField]
     float MaxColVelocity;
+    [SerializeField] Transform TurretBodyTransform;
+    [SerializeField] LayerMask layercheck;
 
     public void Start()
     {
@@ -35,16 +37,26 @@ public class CharacterShootPredict  : MonoBehaviour
         particles = GetComponentInChildren<ParticleSystem>();
         rndr = GetComponent<Renderer>();
         HostileMat = rndr.material;
-        defaultRot = transform.rotation;
+        defaultRot = TurretBodyTransform.rotation;
+
     }
 
 
     //need to replace character controller reference and use a rigidbody instead
     void Update()
     {
+        if (!TurretBodyTransform)
+        {
+            Debug.Log("error no turret body transform");
+        }
+
+        if (IsFriendly)
+        {
+            return;
+        }
         if (!target || IsFriendly)
         {
-            transform.rotation = defaultRot;
+            TurretBodyTransform.rotation = defaultRot;
             if (!target)
             {
                 //print("no target");
@@ -53,26 +65,39 @@ public class CharacterShootPredict  : MonoBehaviour
             return;
         }
 
-        if (trg) {
-            if (trg.HasBeenHit) { target = null; trg = null; print("target has been hit already");  return; }
-            targetPosition = trg.transform.position;
-            targetVelocity = trg.hip.velocity;
+
+        if (RagdollTarget) 
+        {
+            if (RagdollTarget.HasBeenHit) 
+            { 
+                target = null; 
+                RagdollTarget = null; 
+                print("target has been hit already");  
+                return; 
+            }
+            targetPosition = RagdollTarget.transform.position;
+            targetVelocity = RagdollTarget.hip.velocity;
+            //print("target velocity is" + targetVelocity);
         }
         if(CharacterControllerTarget)
         {
             if(!CharacterControllerTarget.enabled)
             {
                 CharacterControllerTarget = null;
-                print("character controller not enabled");
+                //print("character controller not enabled");
                 target = null;
                 return;
             }
         }
-        
-        if (!trg && target is RagdollBehavior)
+
+        //print("target is " + target.GetType());
+        //bool HasRagdollTarget = RagdollTarget;
+
+        //print("ragdoll target assigned: " + HasRagdollTarget);
+        if (!RagdollTarget && target is RagdollBehavior)
         {
             print("assigning ragdoll as target");
-            trg = (RagdollBehavior)target;
+            RagdollTarget = (RagdollBehavior)target;
         }
         if(!CharacterControllerTarget && target is CharacterController)
         {
@@ -85,7 +110,7 @@ public class CharacterShootPredict  : MonoBehaviour
             targetPosition = CharacterControllerTarget.transform.position;
             targetVelocity = CharacterControllerTarget.velocity;
         }
-        print("target controller is " + target.gameObject.name + $"/n position is {targetPosition}" + " velocity is " + targetVelocity);
+        //print("target controller is " + target.gameObject.name + $"/n position is {targetPosition}" + " velocity is " + targetVelocity);
 
         Vector3 IC = CalculateInterceptCourse(targetPosition, targetVelocity, transform.position, projectileSpeed);
 
@@ -94,10 +119,10 @@ public class CharacterShootPredict  : MonoBehaviour
         {
             IC.Normalize();
             interceptionTime1 = FindClosestPointOfApproach(targetPosition, targetVelocity, transform.position, IC * projectileSpeed);
-            interceptionPoint.position = targetPosition + targetVelocity * interceptionTime1;
+            interceptionPoint.position = targetPosition  + targetVelocity * interceptionTime1;
         }
-
-        transform.LookAt(interceptionPoint);
+        
+        TurretBodyTransform.LookAt(interceptionPoint);
 
         if (HaveCourse)
             if (Time.time > timer)
@@ -155,9 +180,9 @@ public class CharacterShootPredict  : MonoBehaviour
 
     void Shoot()
     {
-
-        Rigidbody B = Instantiate(BulletPrefab, transform.position + transform.forward, transform.rotation).GetComponent<Rigidbody>(); ;
-        B.velocity = transform.forward * projectileSpeed;
+        
+        Rigidbody B = Instantiate(BulletPrefab, TurretBodyTransform.position + transform.forward, transform.rotation).GetComponent<Rigidbody>(); ;
+        B.velocity = TurretBodyTransform.forward * projectileSpeed;
         //particles.Play();
     }
 
@@ -177,17 +202,18 @@ public class CharacterShootPredict  : MonoBehaviour
     bool TurretRayCheck(Vector3 ObjPos, int lmask)
     {
 
-        Vector3 dir = ObjPos - transform.position;
+        Vector3 dir = ObjPos - TurretBodyTransform.position;
 
-        Ray ray = new(transform.position, dir);
+        Ray ray = new(TurretBodyTransform.position, dir);
 
-        Debug.DrawRay(transform.position, dir, Color.green, 4);
+        Debug.DrawRay(TurretBodyTransform.position, dir, Color.green, 4);
         RaycastHit hit;
 
         if (Physics.Raycast(ray, out hit, 15, lmask))
         {
             print("raycast hit " + hit.transform.gameObject.name);
-             Debug.DrawRay(transform.position, hit.point - transform.position, Color.red, 1);
+             Debug.DrawRay(TurretBodyTransform.position, hit.point - TurretBodyTransform.position, Color.red, 1);
+
             return true;
         }
 
@@ -232,21 +258,26 @@ public class CharacterShootPredict  : MonoBehaviour
     {
         if (target|| IsFriendly) return;
 
-
+        print(other.gameObject + "entered turret trigger");
 
         //if player enters, raycast in player layer and get charcontroller velocity
-        if (other.TryGetComponent<Player>(out Player player))
+        if (other.TryGetComponent(out Player player))
         {
             print($"player in view of turret ({player.transform})");
-            if (TurretRayCheck(other.transform.position + Vector3.up, 1 << 10))
+
+            if (TurretRayCheck(other.transform.position + Vector3.up, 1 << 0))
             {
+                print("raycast hit something");
+            }
+            else
+            {
+                print("nothing hit in raycast");
                 target = player.GetCharacterController;
-                trg = null;
+                RagdollTarget = null;
                 print(target ? $"target is {target}" : "no target");
                 return;
                 //print("player hit");
             }
-            else print("nothing hit in raycast");
 
         }
         //if(other.CompareTag("limb"))
@@ -261,21 +292,29 @@ public class CharacterShootPredict  : MonoBehaviour
         //}
 
 
-        //if ragdoll enters raycast in limb layer get rigidbody velocity
+        //if ragdoll enters raycast in ragdoll layer get rigidbody velocity
         if (other.CompareTag("Ragdoll"))
         {
             print($"ragdoll in view of turret ({other.transform})");
 
-            if (!other.GetComponent<RagdollBehavior>().IsBeingCarried)
+            RagdollBehavior ragdoll = other.GetComponent<RagdollBehavior>();
+            if (ragdoll.IsBeingCarried && ragdoll.CarryTransform.CompareTag("Player") || ragdoll.HasBeenHit)
             {
-                if (TurretRayCheck(other.transform.position, 1 << 11))
-                {
-                    target = other.GetComponent<RagdollBehavior>();
-
-                    print(target ? $"target is {other.gameObject.name}" : "no target");
-                    print("player hit");
-                }
+                return;
             }
+
+            if (TurretRayCheck(other.transform.position, 1 << 0))
+            {
+                print("raycast to ragdoll hit obstacle");
+            }
+            else
+            {
+                target = ragdoll;
+
+                print(target ? $"target is {other.gameObject.name}" : "no target");
+                print("player hit");
+            }
+
         }
 
     }

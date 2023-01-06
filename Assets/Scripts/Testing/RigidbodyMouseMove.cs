@@ -26,7 +26,7 @@ public class RigidbodyMouseMove : MonoBehaviour
             if (!rd)
             {
                 rd = Instantiate(Ragdoll, transform.position, Quaternion.identity).GetComponentInChildren<RagdollBehavior>();
-                rd.BeCarriedBy(transform);
+                rd.BeCarriedBy(transform, 0);
                 print("carrying activate");
             }    
             else

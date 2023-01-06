@@ -19,6 +19,18 @@ public class SceneLoader : MonoBehaviour
         SceneManager.LoadScene(level);
     }
 
+    public void LoadCurrentLevel()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex );
+        Time.timeScale = 1;
+        print("loading current level");
+    }
+
+    public void LoadNextLevel()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+    }
+
     public void Quit()
     {
         Application.Quit();

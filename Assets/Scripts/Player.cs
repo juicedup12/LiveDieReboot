@@ -14,6 +14,7 @@ using UnityEngine.Events;
 public class Player : MonoBehaviour
 {
     public static Player Instance;
+    [SerializeField] Transform CarryPos;
     RagdollBehavior ragdollB;
     UIBehavior uiBehavior;
     [SerializeField]
@@ -25,14 +26,14 @@ public class Player : MonoBehaviour
     [SerializeField]
     GameObject PlayerPrefab;
     [SerializeField]
-    CinemachineVirtualCamera cam;
-    public CinemachineVirtualCamera deathcam;
+    public CinemachineVirtualCameraBase cam;
     CharacterController charContrl;
     public CharacterController GetCharacterController { get => charContrl; }
     [Header("Character Input Values")]
     public Vector2 move;
     public Vector2 look;
     [SerializeField] float LaunchPower;
+    [SerializeField] float BulletVelocityDamping = 0.5f;
 
     public bool IsJumpPressed;
     public bool IsSprinting;
@@ -42,7 +43,7 @@ public class Player : MonoBehaviour
     Carryable CarryTarget;
     public Transform SpawnPoint;
     Coroutine HoldRoutine;
-    [SerializeField] StringEvent IndicateFireTime;
+    [SerializeField] UnityEvent<string> IndicateFireTime;
     float HoldTimer;
     Coroutine CurrentHoldRoutine;
     Action HoldAction;
@@ -50,26 +51,22 @@ public class Player : MonoBehaviour
     public UnityEvent<Transform> OnRevive;
     public UnityEvent<Transform> OnDie;
     public UnityEvent<Transform> OnRepairPowerUp;
+    public UnityEvent<Transform> OnRespawnStart;
+    UnityAction ReleaseAction;
+    [SerializeField] SpawnManager Spawner;
+    public SpawnManager SetSpawner { set => Spawner = value; }
 
-    enum State
-    {
-        walking, jumping, dead
-    }
-    State playerState = State.walking;
 
     private void Awake()
     {
         print("awake called");
-        Instance = this;
+        //Instance = this;
     }
 
     private void OnEnable()
     {
         print("onEnable called");
         inputs = new ProtoTypeInput();
-
-        inputs.UI.Disable();
-        inputs.Gameplay.Enable();
         inputs.Gameplay.Movement.performed += ReadMoveInput;
         inputs.Gameplay.Movement.canceled += ReadMoveInput;
         inputs.Gameplay.Jump.performed += Jump;
@@ -81,13 +78,47 @@ public class Player : MonoBehaviour
         inputs.Gameplay.Look.performed += ReadLookInput;
         inputs.Gameplay.Look.canceled += ReadLookInput;
         inputs.Gameplay.Interact.performed += InteractInput;
+        inputs.Gameplay.Pause.performed += Pause;
+        inputs.Gameplay.PlayerScroll.performed += PlayerScroll;
+        inputs.Gameplay.PlayerSwitch1.performed += playerSwitch;
+
+        if (Alive)
+        {
+            cam.enabled = true;
+            EnableGameplayControlls();
+        }
+        else
+        {
+            InitializeDeath();
+        }
+        
+    }
+
+    void InitializeDeath()
+    {
+        if (!enabled) return;
+        cam.enabled = true;
+        EnableUIControlls();
+        inputs.Gameplay.Look.Enable();
+        inputs.Gameplay.PlayerScroll.Enable();
+        inputs.Gameplay.PlayerSwitch1.Enable();
+        //changed to have main cam look at hips on death
+        //deathcam.Priority = 13;
+        //InitialiseHoldAction(() => respawn(SpawnPoint.position), "reboot");
+        //InitialiseHoldAction(() => Spawner.StartSpawn(SpawnPoint), "reboot");
+        //switched priority assignment to instead enable deathcam
+        //deathcam.Priority = 13;
+        InitialiseHoldAction(RespawnPlayer, "reboot");
+        //deathcam.enabled = true;
+        //deathcam.Follow = ragdollB.transform;
+        //deathcam.LookAt = ragdollB.transform;
     }
 
 
     private void OnDisable()
     {
         print("on disable called");
-        Instance = null;
+        //Instance = null;
         if (inputs == null) return;
         inputs.Disable();
         inputs.Gameplay.Movement.performed -= ReadMoveInput;
@@ -101,17 +132,59 @@ public class Player : MonoBehaviour
         inputs.Gameplay.Look.performed -= ReadLookInput;
         inputs.Gameplay.Look.canceled -= ReadLookInput;
         inputs.Gameplay.Interact.performed -= InteractInput;
+        inputs.Gameplay.Pause.performed -= Pause;
+        inputs.Gameplay.PlayerScroll.performed -= PlayerScroll; 
+        inputs.Gameplay.PlayerSwitch1.performed -= playerSwitch;
+
+        cam.enabled = false;
+
+
     }
+
+    private void OnDestroy()
+    {
+        if (CameraManager.instance)
+            CameraManager.instance.RemoveCamera(cam as CinemachineFreeLook);
+    }
+
+    void playerSwitch(InputAction.CallbackContext ctx)
+    {
+        //if(ctx.action.name)
+        //int index = ctx.action.GetBindingIndex()
+        //var binding = inputs.FindAction("PlayerSwitch1").bindingMask;
+        //int index = ctx.action.GetBindingIndex(binding);
+        var bindingIndex = ctx.action.GetBindingIndexForControl(ctx.control);
+        print("current index is " + bindingIndex);
+        print("numkey name is " + ctx.action.GetBindingDisplayString(bindingIndex));
+        PlayerSwitcher.Instance.RequestPlayerSwitch(bindingIndex);
+    }
+
+    void EnableGameplayControlls()
+    {
+        inputs.UI.Disable();
+        inputs.Gameplay.Enable();
+    }
+
+    void EnableUIControlls()
+    {
+        inputs.UI.Enable();
+        inputs.Gameplay.Disable();
+    }
+
+
+
 
     // Start is called before the first frame update
     void Start()
     {
         Time.timeScale = 1f;
-
+        ReleaseAction += ReleaseCarryBody;
         charContrl = GetComponent<CharacterController>();
         ragdollB = GetComponentInChildren<RagdollBehavior>();
         //if(ragdollB)
         //ragdollB.Attatch();
+        //**************************************************************
+        //need to refactor and have ui behavior subscribe to player events
         UIBehavior ui = FindObjectOfType<UIBehavior>();
 
         if (ui)
@@ -127,16 +200,7 @@ public class Player : MonoBehaviour
     {
         if (Keyboard.current.escapeKey.wasPressedThisFrame)
         {
-            if (!uiBehavior) return;
-            if(Time.timeScale <.1)
-            {
-                uiBehavior.ResumeGame();
-            }
-            else
-            {
-                uiBehavior.PauseGame();
-
-            }
+           
         }
 
         if(Keyboard.current.fKey.wasPressedThisFrame)
@@ -144,6 +208,36 @@ public class Player : MonoBehaviour
             InitialiseHoldAction(null, "TestHoldDesc");
         }
 
+    }
+
+    void PlayerScroll(InputAction.CallbackContext ctx)
+    {
+        if (Time.timeScale < .1) return;
+        print("scroll values is " + ctx.ReadValue<Vector2>());
+        PlayerSwitcher.Instance.ScrollPlayerSwitch((int)ctx.ReadValue<Vector2>().y);
+        
+    }
+
+    public void RegisterCamera()
+    {
+        if (CameraManager.instance)
+            CameraManager.instance.AddCamera(cam as CinemachineFreeLook);
+    }
+
+    void Pause(InputAction.CallbackContext ctx)
+    {
+        if (!uiBehavior) return;
+        if (Time.timeScale < .1)
+        {
+            uiBehavior.ResumeGame();
+            inputs.Gameplay.Look.Enable();
+        }
+        else
+        {
+            inputs.Gameplay.Look.Disable();
+            uiBehavior.PauseGame();
+
+        }
     }
 
 
@@ -200,9 +294,8 @@ public class Player : MonoBehaviour
 
     void InitialiseHoldAction(Action OnHold, string HoldDescription)
     {
-
-        inputs.UI.Enable();
         uiBehavior.HideUI();
+        inputs.UI.Enable();
         uiBehavior.ShowUIHoldButton(HoldDescription, "E");
         HoldAction = OnHold;
     }
@@ -213,36 +306,61 @@ public class Player : MonoBehaviour
         {
             ReleaseCarryBody();
         }
-        ReleaseCarryBody();
+        if(ragdollB)
         OnDie?.Invoke(ragdollB.transform);
         StopAllCoroutines();
         Alive = false;
-        playerState = State.dead;
 
-        inputs.Gameplay.Disable();
-        uiBehavior.ShowCenterText("you died");
-        Time.timeScale = .5f;
+        InitializeDeath();
+
+        //disabled to replace with initialize death
+        //if(inputs != null)
+        //inputs.Gameplay.Disable();
+        //if (uiBehavior)
+        //{
+        //    uiBehavior.ShowCenterText("you died");
+        //    InitialiseHoldAction(() => Spawner.StartSpawn(SpawnPoint), "reboot");
+
+        //}
+        //Time.timeScale = .5f;
         //resets time scale after button is held
         //change this
 
+
+
         print("player died");
-        InitialiseHoldAction(() => respawn(SpawnPoint.position), "reboot");
         GetComponent<StarterAssets.ThirdPersonController>().enabled = false;
         charContrl.enabled = false;
         GetComponent<Animator>().enabled = false;
-        deathcam.Priority = 12;
-        charContrl.enabled = false;
+        
+        //charContrl.enabled = false;
 
         //rb.isKinematic = false;
         //rb.AddForce(transform.forward + transform.position * 20 + transform.up * 10, ForceMode.Impulse);
 
     }
 
+    void RespawnPlayer()
+    {
+
+        OnRespawnStart?.Invoke(transform);
+
+        StopAllCoroutines();
+        //Destroy(transform.root.gameObject);
+        //Destroy(GetComponent<StarterAssets.ThirdPersonController>());
+
+        //Destroy(charContrl);
+        //Destroy(GetComponent<BasicRigidBodyPush>());
+        //Destroy(this);
+        print("spawning at location " + SpawnPoint.position);
+        Spawner.StartSpawn(SpawnPoint, gameObject);
+    }
+
     //new logic for spawning player prefab
+    //replace with player spawner script
     void respawn(Vector3 SpawnPos)
     {
         uiBehavior.HideUI();
-        deathcam.Priority = 0;
         StopAllCoroutines();
         Destroy(GetComponent<StarterAssets.ThirdPersonController>());
 
@@ -254,9 +372,9 @@ public class Player : MonoBehaviour
         newPlayer.SpawnPoint = this.SpawnPoint;
         newPlayer.uiBehavior = this.uiBehavior;
         newPlayer.PlayerPrefab = this.PlayerPrefab;
-        newPlayer.deathcam = this.deathcam;
         newPlayer.OnDie = this.OnDie;
         newPlayer.IndicateFireTime = IndicateFireTime;
+        newPlayer.enabled = true;
         cam.Follow = newPlayer.transform;
         Time.timeScale = 1;
     }
@@ -268,6 +386,7 @@ public class Player : MonoBehaviour
         print("level clear");
         //need to change this to show hold button 
         //and add next level load logic to hold action
+        uiBehavior.HideUI();
         InitialiseHoldAction(() => uiBehavior.GoToNextLevel(), "Hold to continue");
         uiBehavior.ShowLevelClear();
         StopAllCoroutines();
@@ -282,7 +401,6 @@ public class Player : MonoBehaviour
         OnDisable();
         
 
-        deathcam.Priority = 8;
         Destroy(GetComponent<StarterAssets.ThirdPersonController>());
 
         Destroy(charContrl);
@@ -292,7 +410,6 @@ public class Player : MonoBehaviour
         newPlayer.SpawnPoint = this.SpawnPoint;
         newPlayer.uiBehavior = this.uiBehavior;
         newPlayer.PlayerPrefab = this.PlayerPrefab;
-        newPlayer.deathcam = this.deathcam;
         newPlayer.IndicateFireTime = IndicateFireTime;
         cam.Follow = newPlayer.transform;
         //Destroy(transform.parent.gameObject);
@@ -316,7 +433,7 @@ public class Player : MonoBehaviour
             print("completed hold UI");
             uiBehavior.HideUI();
             //Reboot();
-            if (HoldAction == null) print("no hold action to execute");
+            if (HoldAction == null) { print("no hold action to execute"); return; }
             HoldAction?.Invoke();
             HoldAction = null;
         }
@@ -379,12 +496,12 @@ public class Player : MonoBehaviour
                 charContrl.enabled = false;
                 //if(playerState == State.walking && walkVector.magnitude > .01)
                 //{
-                    velocity *= .5f;
+                    velocity *= .2f;
                 //}
                 print("sending detatch velocity" + velocity.magnitude);
                 ragdollB.Detatch(velocity);
-                deathcam.Follow = ragdollB.transform;
-                deathcam.LookAt = ragdollB.transform;
+               // deathcam.Follow = ragdollB.transform;
+                //deathcam.LookAt = ragdollB.transform;
                 Die();
                 break;
             case Damage.DamageType.Fire:
@@ -398,9 +515,8 @@ public class Player : MonoBehaviour
                 break;
             case Damage.DamageType.launch:
                 print("player launched");
-                playerState = State.dead;
                 Die();
-                deathcam.LookAt = ragdollB.transform;
+                //deathcam.LookAt = ragdollB.transform;
                 //deathcam.Priority = 12;
                 ragdollB.Detatch(dmg.transform.forward * LaunchPower);
                 //rb.AddRelativeForce((dmg.transform.right + Vector3.up * 2) * jumpForce, ForceMode.Impulse);
@@ -411,13 +527,19 @@ public class Player : MonoBehaviour
                 break;
             case Damage.DamageType.bullet:
                 print("bullet hit player");
-                playerState = State.dead;
                 Die();
                 charContrl.enabled = false;
-                ragdollB.Detatch(dmg.GetComponent<Rigidbody>().velocity);
+                Vector3 bulletvelocity = dmg.GetComponent<Rigidbody>().velocity;
+                print("bullet velocity is " + bulletvelocity);
+                ragdollB.Detatch(bulletvelocity * BulletVelocityDamping);
+                ragdollB.HasBeenHit = true;
+                Destroy(dmg.gameObject);
                 //deathcam.Follow = ragdollB.transform;
-                deathcam.LookAt = ragdollB.transform;
-                deathcam.Priority = 12;
+                //deathcam.LookAt = ragdollB.transform;
+                //deathcam.Priority = 12;
+                //cam.Follow = ragdollB.transform;
+                //cam.LookAt = ragdollB.transform;
+                
                 break;
 
             default:
@@ -428,12 +550,13 @@ public class Player : MonoBehaviour
     public void CarryBody(Carryable carrybody)
     {
         carrying = true;
-        carrybody.BeCarriedBy(transform);
+        print(transform.root + " trying to carry " + carrybody.transform.root);
+        carrybody.BeCarriedBy(CarryPos, 0);
         CarryTarget = carrybody;
         print("showing carry UI");
         uiBehavior.ShowUIPressButton("throw", "e");
         print("setting interact action ");
-
+        CarryTarget.OnCarry.AddListener(ReleaseCarryBody);
         //add code to show throw body prompt
     }
 
@@ -444,6 +567,8 @@ public class Player : MonoBehaviour
         CarryTarget.Release(transform.forward);
         carrying = false;
         uiBehavior.HideUI();
+        CarryTarget.OnCarry.RemoveListener(ReleaseAction);
+        CarryTarget = null;
     }
 
     //when player is near carryable, it's data will be retrieved
@@ -477,7 +602,7 @@ public class Player : MonoBehaviour
             case PowerUp.PowerType.revive:
                 if (!Alive)
                 {
-                    OnRepairPowerUp?.Invoke(transform);
+                    OnRepairPowerUp?.Invoke(ragdollB.transform);
                     print("revived");
                     respawn(Pwr.transform.position);
                     Destroy(gameObject);
@@ -485,7 +610,6 @@ public class Player : MonoBehaviour
 
 
                     //Alive = true;
-                    //playerState = State.walking;
                     uiBehavior.HideUI();
                     Pwr.gameObject.SetActive(false);
                     //ragdollB.Attatch();
@@ -500,9 +624,7 @@ public class Player : MonoBehaviour
                     newPlayer.SpawnPoint = this.SpawnPoint;
                     newPlayer.uiBehavior = this.uiBehavior;
                     newPlayer.PlayerPrefab = this.PlayerPrefab;
-                    newPlayer.deathcam = this.deathcam;
                     cam.Follow = newPlayer.transform;
-                    deathcam.Priority = 8;
                     StopAllCoroutines();
                     Destroy(charContrl);
                     Destroy(GetComponent<StarterAssets.ThirdPersonController>());
@@ -572,7 +694,6 @@ public class Player : MonoBehaviour
         }
         ragdollB.Detatch(charContrl.velocity * .5f);
         Die();
-        deathcam.Priority = 12;
         print("timer finished");
     }
 
@@ -604,7 +725,25 @@ public class Player : MonoBehaviour
             if (!Alive || carrying) return;
             InteractAction = Target.interact;
             print("interacting with : " + Target);
+            //need to have interactable be the one to set UI
             uiBehavior.ShowUIPressButton("carry", "E");
+        }
+    }
+
+
+    void FallDamageDetect(GameObject hit)
+    {
+        if (!charContrl) return;
+        if (!charContrl.isGrounded)
+        {
+            print("player character hit " + hit.gameObject + " with velocity of " + charContrl.velocity);
+            if (charContrl.velocity.magnitude > 20)
+            {
+                charContrl.enabled = false;
+                ragdollB.Detatch(Vector3.zero);
+                Die();
+                //SpringCheck(hit.gameObject);
+            }
         }
     }
 
@@ -620,22 +759,30 @@ public class Player : MonoBehaviour
             print("setting interact action to null");
             uiBehavior.HideUI();
         }
+
+        print(other + " exited player");
+    }
+
+    private void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+
+        FallDamageDetect(hit.gameObject);
     }
 
     private void OnCollisionEnter(Collision collision)
     {
+
+        
         print("player enter collision " + collision.gameObject.name);
-        if (playerState == State.jumping)
-            if (collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
-            {
-                playerState = State.walking;
-            }
+
 
         if(collision.gameObject.CompareTag("Turret"))
         {
             print("player entered collision turret");
             collision.gameObject.GetComponent<CharacterShootPredict>().KnockOver();
         }
+
+
 
     }
 
@@ -658,6 +805,9 @@ public class Player : MonoBehaviour
     //}
 
 
+
+    
+
     private void OnParticleCollision(GameObject other)
     {
         print("particle collided with " + other.gameObject);
@@ -674,9 +824,4 @@ public class Player : MonoBehaviour
     }
 
 
-    [System.Serializable]
-    public class StringEvent : UnityEvent<string>
-    {
-
-    }
 }
